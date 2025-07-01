@@ -1,4 +1,5 @@
 <resources>
-
-    <style name="Theme.Rpwhitelabel" parent="android:Theme.Material.Light.DarkActionBar" />
+    <style name="Theme.Rpwhitelabel" parent="android:Theme.Material.Light.DarkActionBar">
+        <item name="android:colorAccent">@color/accentColor</item>
+    </style>
 </resources>
