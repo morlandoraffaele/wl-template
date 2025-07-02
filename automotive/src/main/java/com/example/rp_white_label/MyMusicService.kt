@@ -312,7 +312,6 @@ class MyMusicService : MediaBrowserServiceCompat() {
                 .setTitle(title)
                 .setMediaUri(image)
                 .setIconUri(image)
-                .setExtras(extras)
                 .build()
 
         return MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_BROWSABLE)
@@ -324,6 +323,9 @@ class MyMusicService : MediaBrowserServiceCompat() {
             extras.putString(
                 MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE,
                 "TEST")
+            extras.putDouble(
+                MediaConstants.DESCRIPTION_EXTRAS_KEY_COMPLETION_PERCENTAGE,0.9)
+
         }
         val desc = MediaDescriptionCompat.Builder()
             .setMediaId(mediaId)

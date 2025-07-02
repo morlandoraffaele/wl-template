@@ -16,8 +16,9 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Rpwhitelabel"
-        android:usesCleartextTraffic="true">
+        android:theme="@style/ThemeTuesday"
+        android:usesCleartextTraffic="true"
+        >
         <activity
             android:name=".SettingsActivity"
             android:exported="true"
@@ -32,6 +33,9 @@
         <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
+
+        <meta-data android:name="com.google.android.gms.car.application.theme"
+            android:resource="@style/ThemeTuesday" />
         <!--
          Main music service, provides media browsing and media playback services to
          consumers through MediaBrowserService and MediaSession. Consumers connect to it through
