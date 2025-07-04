@@ -1,11 +1,14 @@
 package com.example.rp_white_label
 
+import android.util.Log
+
 data class PlayableItem(
     val mediaId: String,
     val title: String,
     val subtitle: String,
     val browsable: Boolean = false,
-    val image: String = ""
+    val image: String = "",
+    val mediaUri: String = ""
 )
 
 data class Carousel(
@@ -15,37 +18,70 @@ data class Carousel(
 )
 
 class HomeContentProvider {
-    private val carousels: List<Carousel> by lazy { createHomeContent() }
-
-    fun getHomeCarousels(): List<Carousel> {
-        return carousels
+    fun getHomeCarousels(config: RemoteConfig): List<Carousel> {
+        return createHomeContent(config)
     }
 
-    fun getCarouselItems(carouselId: String): List<PlayableItem>? {
-        return carousels.find { it.id == carouselId }?.items
+    fun getCarouselItems(carouselId: String, config: RemoteConfig): List<PlayableItem>? {
+        return createHomeContent(config).find { it.id == carouselId }?.items
     }
 
-    private fun createHomeContent(): List<Carousel> {
-        return listOf(
-            Carousel(
-                id = "home_recent",
-                title = "Recent",
+    fun getPlayableItem(mediaId: String, config: RemoteConfig): PlayableItem? {
+        return createHomeContent(config).flatMap { it.items }.find { it.mediaId == mediaId }
+    }
+
+    private fun createHomeContent(config: RemoteConfig): List<Carousel> {
+        val allCarousels = mutableListOf<Carousel>()
+
+        if (config.isHomeEnabled) {
+            allCarousels.add(Carousel(
+                id = "home",
+                title = "Home",
                 items = listOf(
                     PlayableItem("recent_1", "Gilded Pleasure", "The Growlers"),
                     PlayableItem("recent_2", "True Affection", "The Blow"),
                     PlayableItem("recent_3", "Live From Electric Lady", "Julian Casablancas"),
                 )
-            ),
-            Carousel(
-                id = "home_latest",
-                title = "Latest",
+            ))
+        }
+
+        if(config.isStationsEnabled) {
+            allCarousels.add(Carousel(
+                id = "stations",
+                title = "Stations",
                 items = listOf(
-                    PlayableItem("latest_1", "Perfect Left", "The Growlers"),
-                    PlayableItem("latest_2", "Lost My Mind", "Froth"),
-                    PlayableItem("latest_3", "More Recommended", "",true, "android.resource://com.example.rp_white_label/drawable/more"),
+                    PlayableItem(
+                        mediaId = "station_47_fm",
+                        title = "STATION 1 - WORKING",
+                        subtitle = "It's rock baby!",
+                        mediaUri = "https://4c4b867c89244861ac216426883d1ad0.msvdn.net/radiocapital/radiocapital/master_ma.m3u8?rp_source=1"
+                    )
                 )
-            )
-        )
-            .filter { it.items.isNotEmpty() }
+            ))
+        }
+
+        if (config.isPodcastEnabled) {
+            allCarousels.add(Carousel(
+                id = "podcast",
+                title = "Podcast",
+                items = listOf(
+                    PlayableItem("podcast_tech", "Tech Weekly", "One More Time"),
+                    PlayableItem("podcast_comedy", "Comedy Now", "One More Time")
+                )
+            ))
+        }
+
+        if (config.isFavouriteEnabled) {
+            allCarousels.add(Carousel(
+                id = "favourite",
+                title = "Favourite",
+                items = listOf(
+                    PlayableItem("favourite_tech", "Favourite Tech Media", "Tech", browsable = true),
+                    PlayableItem("favourite_hobby", "Hobby  Media", "Tech", browsable = true),
+                    PlayableItem("favourite_music", "Music  Media", "Tech", browsable = true)
+                )
+            ))
+        }
+        return allCarousels.filter { it.items.isNotEmpty() }
     }
 }

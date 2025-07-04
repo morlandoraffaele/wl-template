@@ -5,7 +5,9 @@ import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaDescriptionCompat
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.media.MediaBrowserServiceCompat
 import androidx.media.utils.MediaConstants
@@ -17,7 +19,8 @@ import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
-
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 
 /**
  * This class provides a MediaBrowser through a service. It exposes the media library to a browsing
@@ -145,6 +148,7 @@ class MyMusicService : MediaBrowserServiceCompat() {
     private val homeContentProvider = HomeContentProvider()
     private val serviceJob = Job()
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
+    private lateinit var player: ExoPlayer
 
     companion object {
         private const val BROWSER_ROOT_ID = "root"
@@ -182,17 +186,48 @@ class MyMusicService : MediaBrowserServiceCompat() {
 
     private val callback =
         object : MediaSessionCompat.Callback() {
-            override fun onPlay() {}
+            override fun onPlay() {
+                player.play()
+                session.isActive = true
+            }
 
             override fun onSkipToQueueItem(queueId: Long) {}
 
-            override fun onSeekTo(position: Long) {}
+            override fun onSeekTo(position: Long) {
+                player.seekTo(position)
+            }
 
-            override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {}
+            override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
+                session.isActive = true
+                session.setPlaybackState(
+                    PlaybackStateCompat.Builder()
+                        .setState(PlaybackStateCompat.STATE_BUFFERING, 0, 1.0f)
+                        .build()
+                )
+                val item = homeContentProvider.getPlayableItem(mediaId ?: "", config)
+                if (item != null) {
+                    val metadata = MediaMetadataCompat.Builder()
+                        .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, item.mediaId)
+                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, item.title)
+                        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, item.subtitle)
+                        .build()
+                    session.setMetadata(metadata)
 
-            override fun onPause() {}
+                    val mediaItem = androidx.media3.common.MediaItem.fromUri(item.mediaUri)
+                    player.setMediaItem(mediaItem)
+                    player.prepare()
+                    player.play()
+                }
+            }
 
-            override fun onStop() {}
+            override fun onPause() {
+                player.pause()
+            }
+
+            override fun onStop() {
+                player.stop()
+                session.isActive = false
+            }
 
             override fun onSkipToNext() {}
 
@@ -205,6 +240,7 @@ class MyMusicService : MediaBrowserServiceCompat() {
 
     override fun onCreate() {
         super.onCreate()
+        player = ExoPlayer.Builder(this).build()
 
         session = MediaSessionCompat(this, "MyMusicService")
         sessionToken = session.sessionToken
@@ -218,10 +254,12 @@ class MyMusicService : MediaBrowserServiceCompat() {
             Log.d("onCreate", "config: ${config}")
             notifyChildrenChanged(BROWSER_ROOT_ID)
         }
+        player.addListener(PlayerListener())
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        player.release()
         session.release()
         serviceJob.cancel()
     }
@@ -247,52 +285,32 @@ class MyMusicService : MediaBrowserServiceCompat() {
 
     override fun onLoadChildren(parentId: String, result: Result<MutableList<MediaItem>>) {
 
-        val children: List<MenuItem> =
-            when (parentId) {
-                "root" -> {
-                    menuItems.filter { menuItem ->
-                        when (menuItem.mediaId) {
-                            "home" -> config.isHomeEnabled
-                            "stations" -> config.isStationsEnabled
-                            "podcast" -> config.isPodcastEnabled
-                            "favourite" -> config.isFavouriteEnabled
-                            else -> false
-                        }
-                    }
+        val children: List<MediaItem> =
+            if (parentId == "root") {
+                homeContentProvider.getHomeCarousels(config).map { carousel ->
+                    val extras = Bundle()
+                    val description = MediaDescriptionCompat.Builder()
+                        .setMediaId(carousel.id)
+                        .setTitle(carousel.title)
+                        .setExtras(extras)
+                        .build()
+                    MediaItem(description, MediaItem.FLAG_BROWSABLE)
                 }
-                "home" -> {
-                    val mediaItems = mutableListOf<MediaItem>()
-                    val carousels = homeContentProvider.getHomeCarousels()
-                    carousels.forEach { carousel ->
-                        carousel.items.forEach { playableItem ->
-                            val imageUri = if (playableItem.image.isNotEmpty()) Uri.parse(playableItem.image) else Uri.EMPTY
-                            Log.d("onLoadChildren", "imageUri: ${imageUri}")
-                            if(playableItem.browsable)
-                                mediaItems.add(createBrowsableItem(playableItem.mediaId,playableItem.title,MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,"TEST",imageUri))
-                            else
-                                mediaItems.add(createPlayableItem(playableItem.mediaId, playableItem.title, playableItem.subtitle, carousel.title))
-                        }
-                    }
-                    result.sendResult(mediaItems)
-                    return
-                }
-                "stations" -> stationsContent
-                "podcast" -> podcastContent
-                "favourite" -> favouriteContent
-                else -> emptyList()
+            } else {
+                homeContentProvider.getCarouselItems(parentId, config)?.map {
+                    val description = MediaDescriptionCompat.Builder()
+                        .setMediaId(it.mediaId)
+                        .setTitle(it.title)
+                        .setSubtitle(it.subtitle)
+                        .setMediaUri(Uri.parse(it.mediaUri))
+                        .setIconUri(Uri.parse(it.image))
+                        .build()
+
+                    val flag = if (it.browsable) MediaItem.FLAG_BROWSABLE else MediaItem.FLAG_PLAYABLE
+                    MediaItem(description, flag)
+                } ?: emptyList()
             }
-
-        val mediaItems =
-            children
-                .map { child ->
-                    if (child.browsable)
-                        createBrowsableItem(child.mediaId, child.title,child.style, child.groupTitle,child.image )
-                    else
-                        createPlayableItem(child.mediaId, child.title,"")
-                }
-                .toMutableList()
-
-        result.sendResult(mediaItems)
+        result.sendResult(children.toMutableList())
     }
 
     private fun createBrowsableItem(
@@ -335,5 +353,35 @@ class MyMusicService : MediaBrowserServiceCompat() {
             .build()
 
         return MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
+    }
+
+    private fun getPlaybackState(): PlaybackStateCompat {
+        val state = if (player.isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
+        return PlaybackStateCompat.Builder()
+            .setState(state, player.currentPosition, 1.0f)
+            .setActions(
+                PlaybackStateCompat.ACTION_PLAY or
+                        PlaybackStateCompat.ACTION_PAUSE or
+                        PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                        PlaybackStateCompat.ACTION_STOP
+            )
+            .build()
+    }
+
+    private inner class PlayerListener : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            val currentMetadata = session.controller.metadata
+            if (playbackState == Player.STATE_READY && currentMetadata != null && player.duration > 0) {
+                val newMetadata = MediaMetadataCompat.Builder(currentMetadata)
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, player.duration)
+                    .build()
+                session.setMetadata(newMetadata)
+            }
+            session.setPlaybackState(getPlaybackState())
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            session.setPlaybackState(getPlaybackState())
+        }
     }
 }
