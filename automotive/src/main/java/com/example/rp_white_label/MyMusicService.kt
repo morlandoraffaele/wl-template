@@ -201,7 +201,7 @@ class MyMusicService : MediaBrowserServiceCompat() {
                 session.isActive = true
                 session.setPlaybackState(
                     PlaybackStateCompat.Builder()
-                        .setState(PlaybackStateCompat.STATE_BUFFERING, 0, 1.0f)
+                        .setState(PlaybackStateCompat.STATE_BUFFERING, 1, 1.0f)
                         .build()
                 )
                 val item = homeContentProvider.getPlayableItem(mediaId ?: "", config)
@@ -210,6 +210,7 @@ class MyMusicService : MediaBrowserServiceCompat() {
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, item.mediaId)
                         .putString(MediaMetadataCompat.METADATA_KEY_TITLE, item.title)
                         .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, item.subtitle)
+                        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 1L)
                         .build()
                     session.setMetadata(metadata)
 
@@ -356,9 +357,18 @@ class MyMusicService : MediaBrowserServiceCompat() {
     }
 
     private fun getPlaybackState(): PlaybackStateCompat {
-        val state = if (player.isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
+        val state = when (player.playbackState) {
+            Player.STATE_BUFFERING -> PlaybackStateCompat.STATE_BUFFERING
+            Player.STATE_READY -> if (player.playWhenReady) {
+                PlaybackStateCompat.STATE_PLAYING
+            } else {
+                PlaybackStateCompat.STATE_PAUSED
+            }
+            Player.STATE_ENDED -> PlaybackStateCompat.STATE_PAUSED
+            else -> PlaybackStateCompat.STATE_NONE
+        }
         return PlaybackStateCompat.Builder()
-            .setState(state, player.currentPosition, 1.0f)
+            .setState(state, 1L, 1.0f)
             .setActions(
                 PlaybackStateCompat.ACTION_PLAY or
                         PlaybackStateCompat.ACTION_PAUSE or
@@ -370,12 +380,13 @@ class MyMusicService : MediaBrowserServiceCompat() {
 
     private inner class PlayerListener : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
-            val currentMetadata = session.controller.metadata
-            if (playbackState == Player.STATE_READY && currentMetadata != null && player.duration > 0) {
-                val newMetadata = MediaMetadataCompat.Builder(currentMetadata)
-                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, player.duration)
-                    .build()
-                session.setMetadata(newMetadata)
+            if (playbackState == Player.STATE_BUFFERING) {
+                session.setPlaybackState(
+                    PlaybackStateCompat.Builder()
+                        .setState(PlaybackStateCompat.STATE_BUFFERING, 1L, 1.0f)
+                        .build()
+                )
+                return
             }
             session.setPlaybackState(getPlaybackState())
         }

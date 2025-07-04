@@ -38,8 +38,16 @@ class HomeContentProvider {
                 id = "home",
                 title = "Home",
                 items = listOf(
-                    PlayableItem("recent_1", "Gilded Pleasure", "The Growlers"),
-                    PlayableItem("recent_2", "True Affection", "The Blow"),
+                    PlayableItem(
+                        "recent_1",
+                        "Radio Station - 1",
+                        "It's rock baby!",
+                        mediaUri = "https://4c4b867c89244861ac216426883d1ad0.msvdn.net/radiocapital/radiocapital/master_ma.m3u8?rp_source=1"),
+                    PlayableItem(
+                        "recent_2",
+                        "Radio Station - 2",
+                        "It's rock baby!",
+                        mediaUri = "https://4c4b867c89244861ac216426883d1ad0.msvdn.net/radiocapital/radiocapital/master_ma.m3u8?rp_source=1"),
                     PlayableItem("recent_3", "Live From Electric Lady", "Julian Casablancas"),
                 )
             ))
