@@ -42,7 +42,8 @@ class HomeContentProvider {
                         "204",
                         "Radio Deejay",
                         "One Nation One Station",
-                        image = "https://assets.radioplayer.org/380/380204/128/128/kyd7f7ow.png",
+                        //image = "https://assets.radioplayer.org/380/380204/128/128/kyd7f7ow.png",
+                        image = "android.resource://com.example.rp_white_label/drawable/deejay",
                         mediaUri = "https://nmcdn-4c4b867c89244861ac216426883d1ad0.msvdn.net/icecastRelay/S46519745/BKrF6NPEd0z1/icecast?rp_source=1"),
                     PlayableItem("favourite_tech", "Favourite Tech Media", "Tech", browsable = true),
                 )
@@ -58,23 +59,31 @@ class HomeContentProvider {
                         "204",
                         "Radio Deejay",
                         "One Nation One Station",
-                        image = "https://assets.radioplayer.org/380/380204/128/128/kyd7f7ow.png",
+                        // image = "https://assets.radioplayer.org/380/380204/128/128/kyd7f7ow.png",
+                        image = "android.resource://com.example.rp_white_label/drawable/deejay",
                         browsable = false,
                         mediaUri = "https://nmcdn-4c4b867c89244861ac216426883d1ad0.msvdn.net/icecastRelay/S46519745/BKrF6NPEd0z1/icecast?rp_source=1"),
                     PlayableItem(
                         "224",
                         "Radiofreccia",
                         "Libera come noi",
-                        image = "",
+                        image = "android.resource://com.example.rp_white_label/drawable/freccia",
                         browsable = false,
                         mediaUri = "https://streamingp.shoutcast.com/radiofreccia_48.aac?rp_source=1"),
                     PlayableItem(
                         "230",
                         "Radio Ibiza",
                         "Dance Station",
-                        image = "",
+                        image = "android.resource://com.example.rp_white_label/drawable/ibiza",
                         browsable = false,
                         mediaUri = "https://ice02.fluidstream.net/ibiza.aac?rp_source=1"),
+                    PlayableItem(
+                        "102",
+                        "RTL 102.5",
+                        "Very Normal People",
+                        image = "android.resource://com.example.rp_white_label/drawable/rtl",
+                        browsable = false,
+                        mediaUri = "https://streamingp.shoutcast.com/rtl-1025-best_48.aac?rp_source=1"),
                 )
             ))
         }
