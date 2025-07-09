@@ -211,6 +211,8 @@ class MyMusicService : MediaBrowserServiceCompat() {
                         .putString(MediaMetadataCompat.METADATA_KEY_TITLE, item.title)
                         .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, item.subtitle)
                         .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 1L)
+                        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, item.image)
+                        .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, item.image)
                         .build()
                     session.setMetadata(metadata)
 
@@ -299,12 +301,30 @@ class MyMusicService : MediaBrowserServiceCompat() {
                 }
             } else {
                 homeContentProvider.getCarouselItems(parentId, config)?.map {
+                    Log.d("image",it.image)
+                    val imageUrl = it.image.ifEmpty { "https://assets.radioplayer.org/380/380204/128/128/kyd7f7ow.png" }
+                    val imageUri = Uri.parse(imageUrl)
+                    val extras = Bundle().apply {
+
+                        if (it.browsable) {
+                            putInt(
+                                MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
+                                MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM
+                            )
+                        } else {
+                            putInt(
+                                MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
+                                MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM)
+                        }
+                    }
+
                     val description = MediaDescriptionCompat.Builder()
                         .setMediaId(it.mediaId)
                         .setTitle(it.title)
                         .setSubtitle(it.subtitle)
-                        .setMediaUri(Uri.parse(it.mediaUri))
+                        .setMediaUri(Uri.parse(it.image))
                         .setIconUri(Uri.parse(it.image))
+                        .setExtras(extras)
                         .build()
 
                     val flag = if (it.browsable) MediaItem.FLAG_BROWSABLE else MediaItem.FLAG_PLAYABLE
