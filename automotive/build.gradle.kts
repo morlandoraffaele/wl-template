@@ -21,6 +21,22 @@ android {
         return "#000000"
     }
 
+    // get values from Config (used for enable/disable search button )
+    fun getConfigValue(key: String, defaultValue: Any): Any {
+        val configFile = project.file("config.json")
+        if (configFile.exists()) {
+            val config = JsonSlurper().parseText(configFile.readText()) as Map<*, *>
+            return config[key] ?: defaultValue
+        }
+        return defaultValue
+    }
+
+    defaultConfig {
+        applicationId = "com.example.rp_white_label"
+        buildConfigField("boolean", "IS_SEARCH_ENABLED", "${getConfigValue("isSearchEnabled", true)}")
+        buildConfigField("String", "ACCENT_COLOR", "\"${getConfigValue("accentColor", "#000000")}\"")
+    }
+
     // Task to generate colors.xml
     tasks.register("generateColorsFile") {
         doLast {
@@ -69,6 +85,12 @@ android {
             )
         }
     }
+
+    // Enable BuildConfig class
+    buildFeatures {
+        buildConfig = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

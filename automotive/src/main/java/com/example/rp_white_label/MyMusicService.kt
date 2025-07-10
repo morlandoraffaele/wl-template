@@ -21,6 +21,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.google.gson.Gson
 
 /**
  * This class provides a MediaBrowser through a service. It exposes the media library to a browsing
@@ -71,6 +72,11 @@ data class RemoteConfig(
     val isPodcastEnabled: Boolean,
     val isFavouriteEnabled: Boolean,
     val isSearchSupported: Boolean
+)
+
+// Model LocalConfig
+data class LocalConfig(
+    val isSearchEnabled: Boolean
 )
 
 // Retrofit and networking for Remote Config
@@ -125,7 +131,6 @@ object RemoteConfigProvider {
     )
 
     suspend fun get(): RemoteConfig {
-    // @TODO Uncomment the following lines to retrieve remote config from the server
         return try {
             RetrofitClient.api.getRemoteConfig().toDomain()
         } catch (e: Exception) {
@@ -134,6 +139,28 @@ object RemoteConfigProvider {
         }
     }
 }
+
+//object LocalConfigProvider {
+//    private val defaultConfig = LocalConfig(
+//        isSearchEnabled = BuildConfig.IS_SEARCH_ENABLED
+//    )
+//
+//    fun get(context: android.content.Context): LocalConfig {
+//        return try {
+//            // Read from the config.json file in the automotive module
+//            val configFile = java.io.File(context.filesDir.parent + "/../config.json")
+//            if (configFile.exists()) {
+//                val configText = configFile.readText()
+//                Gson().fromJson(configText, LocalConfig::class.java)
+//            } else {
+//                defaultConfig
+//            }
+//        } catch (e: Exception) {
+//            Log.e("LocalConfigProvider", "Error reading local config", e)
+//            defaultConfig
+//        }
+//    }
+//}
 
 class MyMusicService : MediaBrowserServiceCompat() {
 
@@ -144,6 +171,9 @@ class MyMusicService : MediaBrowserServiceCompat() {
         isPodcastEnabled = true,
         isFavouriteEnabled = true,
         isSearchSupported = true
+    )
+    private var localConfig: LocalConfig = LocalConfig(
+        isSearchEnabled = BuildConfig.IS_SEARCH_ENABLED
     )
     private val homeContentProvider = HomeContentProvider()
     private val serviceJob = Job()
@@ -245,6 +275,9 @@ class MyMusicService : MediaBrowserServiceCompat() {
         super.onCreate()
         player = ExoPlayer.Builder(this).build()
 
+//        localConfig = LocalConfigProvider.get(this)
+//        Log.d("localConfig", localConfig.toString())
+
         session = MediaSessionCompat(this, "MyMusicService")
         sessionToken = session.sessionToken
         session.setCallback(callback)
@@ -272,11 +305,11 @@ class MyMusicService : MediaBrowserServiceCompat() {
         clientUid: Int,
         rootHints: Bundle?
     ): MediaBrowserServiceCompat.BrowserRoot? {
-        Log.d("onGetRoot", "config: ${config}")
+         Log.d("onGetRoot", "Using localConfig.isSearchEnabled: ${localConfig.isSearchEnabled}")
         val extras =
             Bundle().apply {
                 //Enable or disable Search
-                putBoolean(MediaConstants.BROWSER_SERVICE_EXTRAS_KEY_SEARCH_SUPPORTED, config.isSearchSupported)
+                putBoolean(MediaConstants.BROWSER_SERVICE_EXTRAS_KEY_SEARCH_SUPPORTED, localConfig.isSearchEnabled)
 
                 //Style PLAYABLE and BROWSABLE MediaItems using /** STYLE_GRID_ITEM **/
                 putInt(MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE, MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM)

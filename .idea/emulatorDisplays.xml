@@ -9,8 +9,8 @@
               <option name="displayDescriptors">
                 <list>
                   <DisplayDescriptor>
-                    <option name="height" value="768" />
-                    <option name="width" value="1024" />
+                    <option name="height" value="1024" />
+                    <option name="width" value="768" />
                   </DisplayDescriptor>
                   <DisplayDescriptor>
                     <option name="displayId" value="6" />
@@ -23,7 +23,7 @@
                 <PanelState>
                   <option name="splitPanel">
                     <SplitPanelState>
-                      <option name="proportion" value="0.6701388955116272" />
+                      <option name="proportion" value="0.6575342416763306" />
                       <option name="firstComponent">
                         <PanelState>
                           <option name="displayId" value="0" />
